@@ -13,4 +13,4 @@ Encoding: UTF-8
 RnwWeave: Sweave
 LaTeX: pdfLaTeX
 
-ProjectName: differential-gene-expression-and-gene-set-enrichment-analysis
+ProjectName: differential-gene-expression-analysis-and-gene-set-enrichment-analysis
