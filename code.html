@@ -447,7 +447,7 @@ library(enrichplot)</code></pre>
 names(de_vector) &lt;- rownames(res)
 de_vector &lt;- sort(de_vector, decreasing = TRUE)
 
-Hs_hallmark_sets &lt;- msigdbr(species = &quot;Mus musculus&quot;, category = &quot;H&quot;)
+Mm_hallmark_sets &lt;- msigdbr(species = &quot;Mus musculus&quot;, category = &quot;H&quot;) # &quot;H&quot; category is &quot;Hallmark&quot; colection
 
 set.seed(123)
 
@@ -460,7 +460,7 @@ gsea_results &lt;- GSEA(
   seed = TRUE,
   pAdjustMethod = &quot;BH&quot;,
   TERM2GENE = dplyr::select(
-    Hs_hallmark_sets,
+    Mm_hallmark_sets,
     gs_name,
     gene_symbol
   )

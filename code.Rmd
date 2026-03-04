@@ -107,7 +107,7 @@ de_vector <- res$stat
 names(de_vector) <- rownames(res)
 de_vector <- sort(de_vector, decreasing = TRUE)
 
-Hs_hallmark_sets <- msigdbr(species = "Mus musculus", category = "H")
+Mm_hallmark_sets <- msigdbr(species = "Mus musculus", category = "H") # "H" category is "Hallmark" colection
 
 set.seed(123)
 
@@ -120,7 +120,7 @@ gsea_results <- GSEA(
   seed = TRUE,
   pAdjustMethod = "BH",
   TERM2GENE = dplyr::select(
-    Hs_hallmark_sets,
+    Mm_hallmark_sets,
     gs_name,
     gene_symbol
   )
