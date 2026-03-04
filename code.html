@@ -13,7 +13,7 @@
 
 <meta name="date" content="2026-03-03" />
 
-<title>Differential Gene Expression Analysis with DESeq2</title>
+<title>Differential Gene Expression and Gene Set Enrichment Analysis</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,8 +350,8 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Differential Gene Expression Analysis with
-DESeq2</h1>
+<h1 class="title toc-ignore">Differential Gene Expression and Gene Set
+Enrichment Analysis</h1>
 <h4 class="author">Mario Farrapo</h4>
 <h4 class="date">2026-03-03</h4>
 
@@ -361,7 +361,9 @@ DESeq2</h1>
 <p>We used RNA-seq data from cell lines treated and untreated with
 Neutrophil Extracellular Traps (NETs) and performed a differential gene
 expression analysis with DESeq2 to identify important gene expression
-differences related to treatment.</p>
+differences related to treatment. Next, we performed a gene set
+enrichment analysis to assess the key biological processes regulated in
+response to treatment.</p>
 <p>The data were obtained from the GEO repository and are publicly
 available under code GSE218119.</p>
 <pre class="r"><code>library(tidyverse)
