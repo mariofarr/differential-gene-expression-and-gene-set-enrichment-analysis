@@ -1,0 +1,162 @@
+---
+title: "Differential Gene Expression Analysis with DESeq2"
+author: "Mario Farrapo"
+date: "2026-03-03"
+output: html_document
+---
+
+We used RNA-seq data from cell lines treated and untreated with Neutrophil Extracellular Traps (NETs) and performed a differential gene expression analysis with DESeq2 to identify important gene expression differences related to treatment. 
+
+The data were obtained from the GEO repository and are publicly available under code GSE218119.
+
+```{r message=FALSE}
+
+library(tidyverse)
+library(DESeq2)
+library(ggrepel)
+
+```
+
+### Data import
+
+```{r}
+
+data <- read_table("GSE218119_featurecounts.txt.gz")
+data <- data |> column_to_rownames("Geneid") |> select(c(6:11))
+counts <- data[, c("VEH1", "VEH2", "VEH3", "NET1", "NET2", "NET3")]
+metadata <- data.frame(row.names = colnames(counts), groups = c("VEH", "VEH", "VEH", "NET", "NET", "NET"))
+
+```
+
+### Eliminate genes with an average count of less than 10 in at least 3 samples
+
+```{r}
+
+counts_filtered <- rowSums(counts >= 10) >= 3
+counts_filtered <- counts[counts_filtered, ]
+
+```
+
+### Differential expression analysis with DESeq2
+
+```{r message=FALSE}
+
+metadata$groups <- as.factor(metadata$groups)
+dds <- DESeqDataSetFromMatrix(countData = counts_filtered,
+                              colData = metadata,
+                              design = ~ groups)
+dds$groups <- relevel(dds$groups, ref = "VEH")
+dds <- DESeq(dds)
+res <- as.data.frame(results(dds))
+
+```
+
+### Prepare the data for the graph
+
+```{r}
+
+res$diffexpressed <- ifelse(res$log2FoldChange > 1 & res$padj < 0.0001, 
+                            "Upregulated",
+                            ifelse(res$log2FoldChange < -1 & res$padj < 0.0001,
+                                   "Downregulated", "Not significant"))
+
+```
+
+### Volcano plot
+
+```{r warning=FALSE}
+
+(volcano <- ggplot(res, aes(x = log2FoldChange, y = -log10(padj), color = diffexpressed)) +
+  geom_point(size = 1.5, alpha = 0.8) +
+  scale_color_manual(values = c("Upregulated" = "red", "Downregulated" = "blue", "Not significant" = "gray")) +
+  theme_bw() +
+  labs( x = bquote(Log[2]~Fold~Change),
+        y = bquote(-Log[10]~padj),
+        color = "Status") +
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "black") +
+  geom_hline(yintercept = -log10(0.0001), linetype = "dashed", color = "black") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "top"))
+
+```
+
+### Save DEGs table
+
+```{r}
+
+res_table <- filter(res, diffexpressed != "Not significant")
+res_table <- rownames_to_column(res_table, "Gene_name")
+res_table[,c(2:7)] <- round(res_table[,c(2:7)], 3)
+write.table(res_table, "DEGs_table.csv", sep = ";")
+
+```
+
+### Pathway enrichment analysis
+
+```{r message=FALSE}
+
+library(msigdbr)
+library(clusterProfiler)
+library(enrichplot)
+
+```
+```{r message=FALSE, warning=FALSE}
+
+de_vector <- res$stat
+names(de_vector) <- rownames(res)
+de_vector <- sort(de_vector, decreasing = TRUE)
+
+Hs_hallmark_sets <- msigdbr(species = "Mus musculus", category = "H")
+
+set.seed(123)
+
+gsea_results <- GSEA(
+  geneList = de_vector,
+  minGSSize = 25,
+  maxGSSize = 500,
+  pvalueCutoff = 0.05,
+  eps = 0,
+  seed = TRUE,
+  pAdjustMethod = "BH",
+  TERM2GENE = dplyr::select(
+    Hs_hallmark_sets,
+    gs_name,
+    gene_symbol
+  )
+)
+
+gsea_result_df <- data.frame(gsea_results@result)
+
+```
+
+### Plot the graph
+
+```{r warning=FALSE, error=FALSE}
+
+top_enrich <- gsea_result_df %>%
+  as_tibble() %>%
+  filter(qvalue < 0.05 & NES > 1 | qvalue < 0.05 & NES < -1) %>%
+  arrange(desc(NES))
+
+top_enrich$ID <- substr(top_enrich$ID, 10, nchar(top_enrich$ID))
+
+(enrich_plot <- ggplot(top_enrich, aes(x = NES, y = reorder(ID, NES))) +
+  geom_segment(aes(x = 0, xend = NES, y = reorder(ID, NES), yend = reorder(ID, NES)),
+  color = "black",
+  linewidth = 0.7) +
+  geom_point(aes(size = rank, color = -log10(qvalue))) +
+  scale_color_gradient(low = "blue", high = "red") +
+  labs(y="", x=NULL)+
+  theme_bw() +
+  labs(x = "Normalized Enrichment Score"))
+
+```
+
+### Visualize the enrichment curve of a specific pathway
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+
+gseaplot2(gsea_results, geneSetID = "HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION")
+
+```

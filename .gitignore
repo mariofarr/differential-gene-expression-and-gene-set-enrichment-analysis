@@ -1,0 +1,6 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DEGs_table.csv
+.GSE218119_featurecounts.txt.gz
